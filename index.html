@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body,
+    #app {
+      width: 100%;
+      height: 100%
+    }
+
+    #app {
+      background: #f5f5f5;
+
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <script src="./echarts.js"></script>
+  <script>
+    // 获取dom
+    const box = document.getElementById('app')
+    const charts = echarts.init(box);
+    let htmlfontsize = 16
+    function fontsizes(res) {
+      var fffont = htmlfontsize;
+      // console.log(fffont)
+      fffont = parseFloat(fffont);
+      return res * fffont
+    }
+
+    const res = {
+      data: [{
+        close: 3592.38,
+        high: 3593.88,
+        low: 3590.87,
+        money: 12686632781.5,
+        open: 3590.92,
+        time: "2021-01-21 09:31",
+        volume: 1010254100
+      }],
+      perClose: 3544.98
+    }
+
+
+    function creatX() {
+      let onehours = ['09', '10', '11', '13', '14']
+      // let perhours=11
+      let min = ''
+      let timegroup = []
+      onehours.forEach((item) => {
+        if (item == '11') {
+          for (let i = 0; i < 30; i++) {
+            let str = item + ':' + (i < 10 ? ('0' + i) : i)
+            // console.log()
+            timegroup.push(str)
+          }
+
+        } else if (item == '09') {
+          for (let i = 30; i < 60; i++) {
+            let str = item + ':' + i
+            // console.log()
+            timegroup.push(str)
+          }
+        } else {
+          for (let i = 0; i < 60; i++) {
+            let str = item + ':' + (i < 10 ? ('0' + i) : i)
+
+            timegroup.push(str)
+          }
+        }
+
+      })
+      timegroup.push("15:00")
+      // console.log(timegroup)
+      return timegroup
+    }
+    let timegroup = creatX()
+
+    function splitDataMin(rawData, currClose) {
+
+
+
+      var values = [];
+      var volumes = [];
+
+      let radios = [];
+      let zde = [];
+      let valueMin = parseFloat(currClose).toFixed(2);
+      let valueMax = parseFloat(currClose).toFixed(2);
+      let radioMin = 0;
+      let radioMax = 0;
+      let valueInterval = 0;
+      let radioInterval = 0;
+      // let lastPoint=[];
+
+
+      for (var i = 0; i < rawData.length; i++) {
+        if ((i - 1 >= 0) && rawData[i].time == rawData[i - 1].time) {
+          continue
+        }
+        let curr = rawData[i].time.split(' ')[1]
+        curr = curr.split(':')[0] + ':' + curr.split(':')[1]
+        let indx = timegroup.indexOf(curr)
+        // // console.log(indx)
+        // 		if(rawData[i].close>valueMax){
+        // 			valueMax=parseFloat(rawData[i].close).toFixed(2)
+
+        // 		}
+        // 		if(rawData[i].close<valueMin){
+        // 			valueMin=parseFloat(rawData[i].close).toFixed(2)
+        // 		}
+        valueMax = Math.max(valueMax, rawData[i].close)
+        valueMin = Math.min(valueMin, rawData[i].close)
+        let zz = (rawData[i].close - currClose).toFixed(2)
+        let rr = (rawData[i].close - currClose) / currClose
+        rr = (rr * 100).toFixed(2)
+
+        radioMin = Math.min(rr, radioMin)
+        radioMax = Math.max(rr, radioMax)
+
+        values.push([indx, rawData[i].close, rawData[i].time, rawData[i].high, rawData[i].low, rawData[i].money, rawData[i].open,
+          zz, rr
+        ]); //x,y
+
+        volumes.push([indx, rawData[i].volume, rawData[i].close > rawData[i].open ? 1 : -1]);
+      }
+
+      if ((valueMax - currClose > 0) && (currClose - valueMin > 0)) {
+        let a = valueMax - currClose
+        let b = currClose - valueMin
+
+      }
+      valueInterval = ((valueMax - valueMin) / 4)
+      radioInterval = (radioMax - radioMin) / 4
+
+      return {
+
+        values: values,
+        volumes: volumes,
+
+        valueMax,
+        valueMin,
+        radioMax,
+        radioMin,
+        valueInterval,
+        radioInterval,
+
+
+      };
+    }
+
+    function getMinOptionData(dataMin, perclose) {
+
+
+      if (!dataMin || !perclose) {
+        return {
+          tooltip: {},
+          grid: [{
+            left: '5%',
+            right: '5%',
+            height: '80%',
+            bottom: '10%'
+          },],
+          xAxis: {
+            data: [],
+            axisLine: {
+
+              lineStyle: {
+                color: "#838D9E"
+              }
+            },
+          },
+          yAxis: {
+            axisLine: {
+
+              lineStyle: {
+                color: "#838D9E"
+              }
+            },
+          },
+          series: [{
+            name: '空',
+            type: 'bar',
+            data: []
+          }]
+        }
+      }
+      let data = splitDataMin(dataMin, perclose)
+      // console.log(data)
+      let averLine = parseFloat(perclose).toFixed(2)
+      // console.log(dataMin,perclose)
+      var oldParam = {}
+      // const _this=this
+      // const {Data}=this.state
+      let option = {}
+      option = {
+        backgroundColor: '#f5f5f5',
+
+        animation: true,
+        legend: {
+          top: 0,
+          left: 'center',
+          data: ['']
+        },
+        tooltip: {
+          trigger: 'axis',
+
+          axisPointer: {
+            type: 'cross'
+          },
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          borderWidth: 1,
+          borderColor: '#000',
+          padding: 10,
+          textStyle: {
+            color: '#ddd',
+            fontSize: fontsizes(1.2)
+          },
+          position: function (pos, params, el, elRect, size) {
+            var obj = {
+              top: 10
+            };
+            obj[['left', 'right'][+(pos[0] < size.viewSize[0] / 2)]] = 30;
+            return obj;
+          },
+          formatter: function (param) {
+            // console.log(param)
+            let p1, p2
+            param.forEach(function (item) {
+              if (item.seriesType == 'line') {
+                p1 = item //分时线
+              } else if (item.seriesType == 'bar') {
+                p2 = item //成交量
+              }
+            })
+
+            function priNum(n) {
+              if (n > 100000000) {
+                return (n / 100000000).toFixed(2) + '亿'
+              } else if (n > 10000) {
+                return (n / 10000).toFixed(2) + '万'
+              } else {
+                return n
+              }
+            }
+            return [
+              '时间:<span style="margin-left:6rem"> ' + p1.data[2] + '</span><hr size=1 style="margin: 3px 0">',
+              '最新价:<span style="float:right;color:' + (p1.data[1] > averLine ? '#FF4A4A' : '#3CC864') + '">' + parseFloat(p1.data[
+                1]) + '</span><br/>',
+              // '最高价:<span style="float:right;color:'+(data.omsg[param.dataIndex][0]>averLine?'#FF4A4A':'#3CC864')+'"> '+aab0+'</span><br/>'+
+              // '最低价:<span style="float:right;color:'+(data.omsg[param.dataIndex][1]>averLine?'#FF4A4A':'#3CC864')+'"> '+aab1+'</span><br/>'+
+
+              // '开盘价:<span style="float:right;color:'+(data.omsg[param.dataIndex][3]>averLine?'#FF4A4A':'#3CC864')+'"> '+aab3+'</span><br/>'+
+              '涨跌额:<span style="float:right;color:' + (Math.ceil(p1.data[7]) > 0 ? '#FF4A4A' : '#3CC864') + '"> ' + p1.data[7] +
+              '</span><br/>' +
+              '涨跌幅:<span style="float:right;color:' + (Math.ceil(p1.data[7]) > 0 ? '#FF4A4A' : '#3CC864') + '"> ' + p1.data[8] +
+              '%</span><br/>' +
+              '成交额:<span style="float:right;"> ' + priNum(p1.data[5]) + '</span><br/>' +
+              '成交量:<span style="float:right"> ' + priNum(p2.data[1]) + '</span><br/>',
+
+            ].join('');
+          }
+          // extraCssText: 'width: 170px'
+        },
+        axisPointer: {
+          link: {
+            xAxisIndex: 'all'
+          },
+
+          label: {
+            backgroundColor: 'transparent',
+            fontSize: fontsizes(1.2),
+            // formatter:function(val){
+
+            // }
+
+          }
+        },
+
+        visualMap: {
+          show: false,
+          seriesIndex: 1,
+          dimension: 2,
+          pieces: [{
+            value: 1,
+            color: "#FF4A4A"
+          }, {
+            value: -1,
+            color: "#3CC864"
+          }]
+        },
+        grid: [{
+          left: '15%',
+          right: '15%',
+          height: '60%',
+          bottom: '30%'
+        },
+        {
+          left: '15%',
+          right: '15%',
+          bottom: '10%',
+          height: '20%'
+        },
+
+        ],
+        xAxis: [{
+          type: 'category',
+          data: timegroup,
+          boundaryGap: false,
+          max: 241,
+          // interval:90,  
+          scale: true,
+
+          axisLine: {
+            onZero: false,
+            lineStyle: {
+              color: '#303b49'
+            }
+          },
+          splitLine: {
+            show: false
+          },
+          axisTick: {
+            show: false
+          },
+          axisLabel: {
+            show: false
+          },
+          // splitNumber: 20,
+          // min: 'dataMin',
+          // max: 'dataMax',
+          axisPointer: {
+            z: 100,
+            label: {
+              show: false
+            }
+          },
+
+        },
+        {
+          type: 'category',
+          gridIndex: 1,
+          data: timegroup,
+          scale: true,
+          max: 241,
+          boundaryGap: false,
+          axisLine: {
+            onZero: false,
+            lineStyle: {
+              color: "#838D9E"
+            }
+          },
+          axisTick: {
+
+            lineStyle: {
+              width: fontsizes(0.1)
+            },
+
+            // show: false,
+            interval: (index, value) => {
+              if (index == 0 || index == 60 || index == 120 || index == 180 || index == 240) {
+                return true
+              }
+            }
+          },
+          axisPointer: {
+            z: 100,
+            label: {
+              show: false
+            }
+          },
+          splitLine: {
+            show: false
+          },
+          axisLabel: {
+            interval: 0,
+            fontSize: fontsizes(1.2),
+            color: '#838D9E',
+            formatter: function (value, index) {
+              if (index == 0) {
+                return '9:30'
+              } else if (index == 60) {
+                return '10:30'
+              } else if (index == 120) {
+                return '11:30/13:00'
+              } else if (index == 180) {
+                return '14:00'
+              } else if (index == 240) {
+                return '15:00'
+              } else {
+                return
+              }
+
+            }
+          },
+
+        },
+
+        ],
+        yAxis: [{
+          min: data.valueMin,
+          max: data.valueMax,
+          // axisPointer: {
+          //     type: 'shadow',
+          // 	show:false
+          // },
+          scale: true,
+          interval: data.valueInterval,
+          splitArea: {
+            show: false
+          },
+
+          splitLine: {
+            lineStyle: {
+              color: '#303b49'
+            }
+
+          },
+          axisTick: {
+            show: false
+          },
+          axisLine: {
+            show: false
+          },
+          axisPointer: {
+            z: 100,
+            label: {
+              backgroundColor: '#ddd',
+              padding: [2, 3],
+              color: '#333',
+              formatter: function (val) {
+
+                return parseFloat(val.value).toFixed(2)
+              }
+            }
+          },
+          axisLabel: {
+            // show:false
+            color: '#838D9E',
+            formatter: function (value) {
+              // console.log(value)
+              return value.toFixed(2)
+            },
+            textStyle: {
+              fontSize: fontsizes(1.2),
+              color: function (value, index) {
+                // console.log(value+'----'+averLine)
+                return Math.round(value) > Math.round(averLine) ? '#FF4A4A' : (Math.round(value) < Math.round(averLine) ?
+                  '#3CC864' : 'gray');
+              }
+            }
+          }
+        },
+
+        {
+          scale: true,
+          gridIndex: 1,
+          splitNumber: 2,
+          axisLabel: {
+            show: false
+          },
+          axisLine: {
+            show: false
+          },
+          axisTick: {
+            show: false
+          },
+          splitLine: {
+            show: false
+          },
+          axisPointer: {
+            z: 100,
+            label: {
+              show: false,
+              backgroundColor: '#ddd',
+              padding: [2, 3],
+              color: '#333',
+              formatter: function (val) {
+
+                return parseFloat(val.value).toFixed(2)
+              }
+            }
+          },
+        },
+        {
+          min: data.radioMin,
+          max: data.radioMax,
+          interval: data.radioInterval,
+
+          gridIndex: 0,
+          type: 'value',
+          name: ' ',
+
+          scale: true,
+          splitArea: {
+            show: false
+          },
+          axisPointer: {
+            z: 100,
+            label: {
+              backgroundColor: '#ddd',
+              padding: [2, 3],
+              color: '#333',
+              formatter: function (val) {
+
+                return parseFloat(val.value).toFixed(2) + '%'
+              }
+            }
+          },
+          splitLine: {
+            show: false,
+            lineStyle: {
+              color: '#f5f5f5'
+            }
+
+          },
+          axisTick: {
+            show: false
+
+          },
+          axisLine: {
+            show: false
+          },
+          axisLabel: {
+            fontSize: fontsizes(1.2),
+            show: true,
+            // interval: 'auto',//居中显示
+            textStyle: {
+              color: function (value, index) {
+                return value > 0 ? '#FF4A4A' : (value < 0 ? '#3CC864' : 'gray');
+              }
+            },
+            formatter: function (value) {
+              let text1 = parseFloat(value).toFixed(2) + '%'
+              if (value > 0 || value == 0) {
+                text1 = " " + text1;
+              }
+              return text1
+            }
+
+            //以百分比显示
+          },
+
+        }
+        ],
+        dataZoom: [ //时间区域
+          {
+            type: 'inside',
+            xAxisIndex: [0, 1],
+            start: 0,
+            end: 100,
+            maxSpan: 100,
+            minSpan: 100
+            // maxValueSpan:240,
+            // minValueSpan:240
+          },
+          {
+            show: false,
+            xAxisIndex: [0, 1],
+            type: 'slider',
+            top: '85%',
+            start: 0,
+            end: 100,
+            maxSpan: 100,
+            minSpan: 100
+            // maxValueSpan:240,
+            // minValueSpan:240
+          }
+        ],
+        series: [{
+          name: '当前价格',
+          type: 'line',
+
+
+          markLine: {
+
+
+            lineStyle: {
+              color: 'gray'
+            },
+            symbol: "none",
+            data: [{
+              name: 'Y 轴值为 100 的水平线',
+              yAxis: averLine,
+              label: {
+                show: false,
+                position: 'start',
+                backgroundColor: "#DDDDDD",
+                borderRadius: 2,
+                width: '10%',
+                padding: [1, 2],
+                fontSize: fontsizes(1.2),
+                // formatter:"{@[3]}"
+
+              },
+            },
+            {
+              name: 'Y 轴值为 100 的水平线',
+              yAxis: averLine,
+              label: {
+                show: false,
+                position: 'end',
+                backgroundColor: "#DDDDDD",
+                borderRadius: 2,
+                width: '10%',
+                padding: [1, 2],
+                fontSize: fontsizes(1.2),
+                formatter: "0.00%"
+
+              },
+            },
+
+            ]
+          },
+          markPoint: {
+            symbol: 'circle',
+            symbolSize: 4,
+            itemStyle: {
+              borderColor: "#2e91ff",
+              color: "white"
+            },
+            label: {
+              show: false,
+              position: "top",
+              fontSize: fontsizes(1.2),
+              formatter: function (value) {
+
+              }
+            },
+            data: [{
+              type: "max",
+              valueIndex: 0
+            }],
+            animation: true,
+            animationEasingUpdate: "bounceIn",
+            animationEasing: "bounceIn"
+          },
+          data: data.values,
+          smooth: true,
+          symbol: 'none',
+          lineStyle: {
+            opacity: 1,
+            width: fontsizes(0.1),
+            color: "#1A5C7B" //#50b2f4
+          },
+          areaStyle: {
+            // origin:'start',
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [{
+                offset: 0,
+                color: '#41658177' // 0% 处的颜色
+              },
+              {
+                offset: 0.6,
+                color: '#41658111' // 100% 处的颜色
+              },
+              {
+                offset: 1,
+                color: 'transparent' // 100% 处的颜色
+              }
+              ],
+              global: false // 缺省为 false
+            }
+          }
+        },
+        {
+          name: '成交量',
+          type: 'bar',
+          barWidth: fontsizes(0.1),
+          xAxisIndex: 1,
+          yAxisIndex: 1,
+          data: data.volumes
+        },
+          // {
+          //     name: ' ',
+          //     type: 'line',
+          //     // xAxisIndex: 1,
+          //     yAxisIndex:2,
+          //     data: data.radios,
+          // 	smooth: true,
+          // 	 symbol: 'none',
+          // 	lineStyle: {
+          // 	    opacity: 0
+          // 	},
+
+          // },
+
+
+        ]
+      };
+      return option;
+    }
+
+    charts.setOption(getMinOptionData(res.data, res.perClose))
+  </script>
+</body>
+
+</html>
